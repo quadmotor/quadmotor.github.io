@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h1>2D Triangle Rectangle Overlap</h1>
+
+<canvas id="myCanvas" width="800" height="600" style="border:1px solid #000000;">
+Sorry, your browser does not support canvas.
+</canvas>
+
+<script>
+// Create a canvas
+
+const canvas = document.getElementById("myCanvas");
+const ctx = canvas.getContext("2d");
+
+// https://stackoverflow.com/questions/1527803/generating-random-whole-numbers-in-javascript-in-a-specific-range
+function getRandomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function drawRectangle(x, y, width, height) {
+    ctx.beginPath();
+    ctx.rect(x, y, width, height);
+    ctx.stroke();
+}
+
+function drawTriangle(x1, y1, x2, y2, x3, y3) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(x3, y3);
+    ctx.closePath();
+    ctx.stroke();
+}
+
+function drawRedRectangle(x, y, width, height) {
+    ctx.fillStyle = "red";
+    ctx.fillRect(x, y, width, height);
+    ctx.stroke();
+}
+
+function drawOrangeTriangle(x1, y1, x2, y2, x3, y3) {
+    ctx.fillStyle = "orange";
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(x3, y3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawRandomShapes() {
+    // Draw a rectangle
+    const rectX = getRandomInt(0, 600);
+    const rectY = getRandomInt(0, 400);
+    const rectWidth = getRandomInt(50, 200);
+    const rectHeight = getRandomInt(50, 200);
+    drawRectangle(rectX, rectY, rectWidth, rectHeight);
+
+    // Draw a triangle
+    const triX1 = getRandomInt(0, 600);
+    const triY1 = getRandomInt(0, 400);
+    const triX2 = getRandomInt(0, 600);
+    const triY2 = getRandomInt(0, 400);
+    const triX3 = getRandomInt(0, 600);
+    const triY3 = getRandomInt(0, 400);
+    drawTriangle(triX1, triY1, triX2, triY2, triX3, triY3);
+
+    if (triBoxOverlap(
+        [rectX + rectWidth / 2, rectY + rectHeight / 2],
+        [rectWidth / 2, rectHeight / 2],
+        [triX1, triY1, triX2, triY2, triX3, triY3]
+    )) {
+        drawRedRectangle(
+            rectX, rectY, rectWidth, rectHeight
+        );
+
+        drawOrangeTriangle(
+            triX1, triY1, triX2, triY2, triX3, triY3
+        );
+
+        drawRectangle(
+            rectX, rectY, rectWidth, rectHeight
+        );
+    }
+}
+
+function AXISTEST_Z12(a, b, fa, fb, v1, v2, boxhalfsize) {
+    let p0, p1, p2, min, max, rad;
+
+    const X = 0;
+    const Y = 1;
+
+    // Test axis Z12
+    p0 = a * v1[X] - b * v1[Y];
+    p1 = a * v2[X] - b * v2[Y];
+
+    if (p0 < p1) {
+        min = p0; 
+        max = p1;
+    } else {
+        min = p1; 
+        max = p0;
+    }
+
+    rad = fa * boxhalfsize[X] + fb * boxhalfsize[Y];
+
+    if (min > rad || max < -rad) return true;
+
+    return false;
+}
+
+function AXISTEST_Z0(a, b, fa, fb, v0, v1, boxhalfsize) {
+    let p0, p1, min, max, rad;
+
+    const X = 0;
+    const Y = 1;
+
+    // Test axis Z0
+    p0 = a * v0[X] - b * v0[Y];
+    p1 = a * v1[X] - b * v1[Y];
+
+    if (p0 < p1) {
+        min = p0; 
+        max = p1;
+    } else {
+        min = p1; 
+        max = p0;
+    }
+
+    rad = fa * boxhalfsize[X] + fb * boxhalfsize[Y];
+
+    if (min > rad || max < -rad) return true;
+
+    return false;
+}
+
+function subtractVectors(v1, v2) {
+    return [v1[0] - v2[0], v1[1] - v2[1]];
+}
+
+function findMinMax(vals) {
+    let min = vals[0];
+    let max = vals[0];
+    for (let i = 1; i < vals.length; i++) {
+        if (vals[i] < min) {
+            min = vals[i];
+        }
+        if (vals[i] > max) {
+            max = vals[i];
+        }
+    }
+    return [min, max];
+}
+
+function triBoxOverlap(boxCenter, boxHalfSize, triangle) {
+    const X = 0;
+    const Y = 1;
+    // Check if the triangle intersects with the rectangle
+    const [x1, y1, x2, y2, x3, y3] = triangle;
+    const p0 = [x1, y1];
+    const p1 = [x2, y2];
+    const p2 = [x3, y3];
+
+    const v0 = subtractVectors(p0, boxCenter);
+    const v1 = subtractVectors(p1, boxCenter);
+    const v2 = subtractVectors(p2, boxCenter);
+
+    const e0 = subtractVectors(v1, v0);
+    const e1 = subtractVectors(v2, v1); 
+    const e2 = subtractVectors(v0, v2);
+
+    let fex, fey, fez;
+    fex = Math.abs(e0[X]);
+    fey = Math.abs(e0[Y]);
+    if (AXISTEST_Z12(e0[Y], e0[X], fey, fex, v1, v2, boxHalfSize)) return false;
+
+    fex = Math.abs(e1[X]);
+    fey = Math.abs(e1[Y]);
+    if (AXISTEST_Z0(e1[Y], e1[X], fey, fex, v0, v1, boxHalfSize)) return false;
+
+    fex = Math.abs(e2[X]);
+    fey = Math.abs(e2[Y]);
+    if (AXISTEST_Z12(e2[Y], e2[X], fey, fex, v1, v2, boxHalfSize)) return false;
+
+    
+    const xMinMax = findMinMax([v0[X], v1[X], v2[X]]);
+    if (xMinMax[0] > boxHalfSize[X] || xMinMax[1] < -boxHalfSize[X]) return false;
+    const yMinMax = findMinMax([v0[Y], v1[Y], v2[Y]]);
+    if (yMinMax[0] > boxHalfSize[Y] || yMinMax[1] < -boxHalfSize[Y]) return false;
+
+    return true;
+
+}
+
+for (let i = 0; i < 1; i++) {
+    drawRandomShapes();
+}
+
+</script>
+
+</body>
+</html>
